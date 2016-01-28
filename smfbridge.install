@@ -1,0 +1,22 @@
+<?php
+/**
+ * Implements hook_uninstall().
+ */
+function smfbridge_uninstall() {
+  /**
+   * @var \Drupal\smfbridge\Smf\Settings $smfSettingsService
+   */
+  $config = \Drupal::service('config.factory')
+    ->getEditable('smfbridge.settings');
+  $forumDirectoryPath = $config->get('forum_directory_path');
+  if (!empty($forumDirectoryPath)) {
+    $smfSettingsService = \Drupal::service('smfbridge.smfsettings');
+    $smfSettingsService->removeIntegration();
+    $config->delete();
+  }
+  else {
+    $errorMsg = t('SMF sources path isn\'t defined, integration hooks were not deleted');
+    \Drupal::logger('smfbridge')->error($errorMsg);
+    drupal_set_message($errorMsg, 'error');
+  }
+}

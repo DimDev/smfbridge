@@ -1,0 +1,6 @@
+smfbridge.settings:
+  title: 'SMF bridge settings'
+  parent: system.admin_config_system
+  description: 'Configure Simple Machines Forum bridge settings.'
+  weight: -10
+  route_name: smfbridge.settings

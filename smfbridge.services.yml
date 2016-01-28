@@ -1,0 +1,5 @@
+services:
+  smfbridge.smfmember:
+    class: Drupal\smfbridge\Smf\Member
+  smfbridge.smfsettings:
+    class: Drupal\smfbridge\Smf\Settings

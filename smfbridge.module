@@ -1,0 +1,119 @@
+<?php
+
+/**
+ * Implements hook_user_login().
+ *
+ * Performs login in smf.
+ */
+function smfbridge_user_login(Drupal\User\Entity\User $user) {
+  try {
+    $config = \Drupal::config('smfbridge.settings');
+
+    if ($config->get('conection_installed')) {
+      /**
+       * @var Drupal\smfbridge\SMF\Member $smfMemberService
+       */
+      $smfMemberService = Drupal::service('smfbridge.smfmember');
+      $smfMember = $smfMemberService->getSmfMemberByName($user->getUsername());
+      if (is_null($smfMember)) {
+        $smfMember = $smfMemberService->memberRegister($user);
+        if (is_null($smfMember)) {
+          throw new \Exception(
+            t(
+              'Failed to create new member record for username "@username"',
+              ['@username' => $user->getUsername()]
+            )
+          );
+        }
+      }
+
+      if (!$smfMemberService->memberLogin($user, $smfMember)) {
+        drupal_set_message('Can\'t login on forum');
+        \Drupal::logger('smfbridge')
+          ->error('Failed to login member "@member" on forum', ['@member' => $user->getUsername()]);
+      }
+    }
+    else {
+      $currentUser = \Drupal::currentUser();
+      if ($currentUser->hasPermission('administer site configuration')) {
+
+        $url = \Drupal\Core\Url::fromRoute('smfbridge.settings');
+        $link = \Drupal\Core\Link::fromTextAndUrl(t('SMF bridge settings'), $url)
+          ->toRenderable();
+        drupal_set_message(
+          t(
+            'SMF Bridge module is enabled but not configured properly.
+            Please visit @link to define settings.',
+            [
+              '@link' => render($link),
+            ]
+          ),
+          'warning'
+        );
+      }
+    }
+  } catch (Exception $e) {
+    \Drupal::logger('smfbridge')->error($e->getMessage());
+    drupal_set_message(t('Ooops! Something went wrong. Please try again later.'));
+  }
+}
+
+/**
+ * Implements hook_user_logout().
+ */
+function smfbridge_user_logout(Drupal\Core\Session\AccountProxy $account) {
+  try {
+    /**
+     * @var Drupal\smfbridge\Smf\Member $smfMember
+     */
+    $smfMember = Drupal::service('smfbridge.smfmember');
+    if (!$smfMember->memberLogout()) {
+      \Drupal::logger('smfbridge')->error('Failed to logout user from SMF');
+      drupal_set_message();
+    }
+  } catch (Exception $e) {
+    \Drupal::logger('smfbridge')->error($e->getMessage());
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function smfbridge_form_user_login_form_alter(&$form, Drupal\Core\Form\FormState $formState) {
+  /**
+   * @var Symfony\Component\HttpFoundation\Request $request
+   */
+  //Drupal::requestStack()->getMasterRequest()
+  $request = Drupal::request();//Drupal::request()->query->all()
+
+  //$destination = $request->getQueryString();
+  $destination = $request->query->get('destination');//http%3A%2F%2Fdrupaltest.local%2Fforum%2Findex.php
+  if (!empty($destination)) {
+    //TODO: check_plain and valid_url
+    $form['destination'] = array(
+      '#type' => 'value',
+      '#value' => $destination,
+    );
+    $form['#submit'][] = 'smfbridge_redirect_user_login_submit';
+  }
+  //throw new Exception('555');
+}
+
+/**
+ * Sets shutdown function to perform redirects later.
+ */
+function smfbridge_redirect_user_login_submit(&$form, Drupal\Core\Form\FormState $formState) {
+  $destination = $formState->getValue('destination');
+  if (!empty($destination)) {
+    drupal_register_shutdown_function('smfbridge_redirect_perform_redirect', $destination);
+  }
+}
+
+/**
+ * Perform redirects.
+ */
+function login_redirect_perform_redirect($destination) {
+  $response = new \Symfony\Component\HttpFoundation\RedirectResponse($destination);
+  $response->send();
+  exit;
+}

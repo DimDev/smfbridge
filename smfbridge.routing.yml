@@ -1,0 +1,28 @@
+smfbridge.settings:
+  path: '/admin/config/smfbridge'
+  defaults:
+    _form: '\Drupal\smfbridge\Form\SmfbridgeSettingsForm'
+    _title: 'Smfbridge settings'
+  requirements:
+    _permission: 'administer site configuration'
+
+smfbridge.profile.edit:
+  path: '/smfbridge/profile/edit'
+  defaults:
+    _controller: 'Drupal\smfbridge\Controller\User::redirectToEditProfile'
+  requirements:
+    _access: 'TRUE'
+
+smfbridge.user.login:
+  path: '/smfbridge/user/login'
+  defaults:
+    _controller: 'Drupal\smfbridge\Controller\User::login'
+  requirements:
+    _access: 'TRUE'
+
+smfbridge.admin.checkpassword:
+  path: '/smfbridge/adminpassword/{smfSessionId}/{encodedRedirectPath}'
+  defaults:
+    _controller: 'Drupal\smfbridge\Controller\User::adminPassword'
+  requirements:
+    _permission: 'administer site configuration'

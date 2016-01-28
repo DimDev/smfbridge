@@ -1,0 +1,5 @@
+name: Drupal 8 to SMF bridge
+type: module
+description: "Bridge between Drupal 8 and Simple Machines Forum"
+package: Bridges
+core: 8.x
